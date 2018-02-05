@@ -1,0 +1,18 @@
+<div id="container">
+<form method="post" action="/_edit/{rootpath}" enctype="multipart/form-data">
+<!-- new_page_placeholder -->
+<textarea name="content" rows="25">{markdown}</textarea>
+<p>
+Attach file(s)/photo(s): <input type="file" name="upload" multiple />
+<br>
+<input type="checkbox" name="sort_thumb" value="sort_thumb" checked> Rename and make thumbnail of image formats. Create video player of movie formats
+<br>
+Save to upload and append file
+<br>
+<input type="submit" value="Cancel" name="cancel"/>
+<input type="submit" value="Save and Edit" name="saveE"/>
+<input type="submit" value="Save and View" name="saveV"/></p>
+</form>
+</div>
+<p>REMINDER: Changes are saved immediately</p>
+<p><small><a href="?ace=true">turn ON Ace editor</a> (save first)</small></p>

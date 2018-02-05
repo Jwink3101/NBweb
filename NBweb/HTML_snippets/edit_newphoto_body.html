@@ -1,0 +1,41 @@
+<!-- Custom style up attach inspired by https://stackoverflow.com/questions/572768/styling-an-input-type-file-button -->
+<style>
+.custom-file-upload {
+    border: 2px solid #ccc;
+    display: inline-block;
+    padding: 12px 18px;
+    cursor: pointer;
+}
+input[type="file"] {
+    display: none;
+}
+</style>
+<div id="container">
+
+<form method="post" action="/_edit/{rootpath}" enctype="multipart/form-data" id="main">
+<!-- new_page_placeholder -->
+<p>
+Attach file(s)/photo(s): 
+<label for="up" class="custom-file-upload">
+     Choose File/Photo(s)
+</label>
+<input type="file" name="upload" id="up" multiple />
+<br>
+<input type="checkbox" name="sort_thumb" value="sort_thumb" checked> Rename and make thumbnail of image formats. Create video player of movie formats
+<br>
+Save to upload and append file
+<br>
+<input type="submit" value="Cancel" name="cancel"/>
+<input type="submit" value="Save and View" name="saveV"/></p>
+</form>
+<p>Photo Pages are regular pages but the filename and text are set differently. They can be edited later. <strong>Will save as soon as photo is attached!</strong></p>
+</div>
+
+<!-- Auto submit once file is added -->
+<script>
+$(function(){
+    $("#up").change(function(){
+        $("#container form input[name=saveV]").click();
+    });
+});
+</script>

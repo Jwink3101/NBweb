@@ -1,0 +1,75 @@
+
+.wrap {
+   overflow: hidden;
+   margin: 00px;
+}
+.box3,.box2,.box1 {
+   float: left;
+   position: relative;
+   width: 10%;
+   padding-bottom: 10%;
+}
+.boxInner {
+   position: absolute;
+   left: 10px;
+   right: 10px;
+   top: 10px;
+   bottom: 10px;
+   overflow: hidden;
+}
+.boxInner img {
+   max-width: 100%;
+   max-height: 100%; /* Toggle this to make the width not overflow */
+}
+.boxInner .titleBox {
+   position: absolute;
+   bottom: 0;
+   left: 0;
+   right: 0;
+   margin-bottom: 0px;
+   background: #000;
+   background: rgba(0, 0, 0, 0.33);
+   color: #FFF;
+   padding: 0px;
+   text-align: center;
+
+}
+
+@media only screen and (max-width : 500px) {
+   /* Smartphone view: 1 tile */
+    .box3,.box2,.box1 {
+      width: 100%;
+      padding-bottom: 100%;
+   }
+}
+@media only screen and (max-width : 750px) and (min-width : 501px) {
+   /* Tablet view: 2 tiles */
+   .box3,.box2 {
+      width: 50%;
+      padding-bottom: 50%;
+   }
+   .box1 {
+      width: 100%;
+      padding-bottom: 100%;
+   }
+}
+@media only screen and (min-width : 751px) {
+   /* Small desktop / ipad view: 3 tiles */
+   .box3 {
+      width: 33.3%;
+      padding-bottom: 33.3%;
+   }
+   .box2 {
+      width: 50%;
+      padding-bottom: 50%;
+   }
+   .box1 {
+      width: 100%;
+      padding-bottom: 100%;
+   }
+   
+}
+/* 
+Based on:
+
+http://www.dwuser.com/education/content/creating-responsive-tiled-layout-with-pure-css/ */

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<script>
+window.onload = function myFunction() {
+    var dest = prompt("Enter full path to directory", "ROOT");
+    if (dest == null || dest == "") {
+        window.history.back();
+    } else {
+        // Inspired by https://stackoverflow.com/a/133997/3633154
+        var form = document.createElement("form");
+        form.setAttribute("method", 'post');
+        form.setAttribute("action", '/_newdir');
+        
+        var field = document.createElement("input");
+        field.setAttribute("type", "hidden");
+        field.setAttribute("name", "newdir");
+        field.setAttribute("value", dest );
+        
+        form.appendChild(field);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+    
+}
+
+</script>
+
+</body>
+</html>

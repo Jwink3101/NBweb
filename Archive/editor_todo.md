@@ -1,0 +1,2 @@
+- [X] option to choose ace or not. With mobile detection
+- [X] remember place upon save (will need to add an additional post with a  hidden value

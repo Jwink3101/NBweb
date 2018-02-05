@@ -1,0 +1,56 @@
+<% 
+import os
+N = len(all_img_paths)
+%>
+
+% if N == 1:
+%   img,thumb,alt,caption = all_img_paths[0]
+%   if len(alt.strip()) == 0:
+%       alt = os.path.basename(img)
+%   end
+<a href="{{img}}">
+    <img src="{{thumb}}" alt="{{alt}}" />
+    % if len(caption.strip()) >0:
+    <br>{{caption}}
+    % end
+</a>
+
+% else:      
+<htmlblock>
+<!-- Inspired by: http://www.dwuser.com/education/content/creating-responsive-tiled-layout-with-pure-css/ -->
+
+<%
+if N in [2,4]:
+    box = "box2"
+elif N == 1:
+    box = "box1"
+else:
+    box = "box3"
+end
+%>
+
+<div class="wrap">
+
+% for img,thumb,alt,caption in all_img_paths: 
+%   if len(alt.strip()) == 0:
+%       alt = os.path.basename(img)
+%   end
+    
+
+    <div class="{{box}}">
+    <div class="boxInner">
+        <a href="{{img}}">
+      <img src="{{thumb}}" alt="{{alt}}" />
+    % if len(caption.strip()) >0:
+      <div class="titleBox">{{caption}}</div>
+    % end
+      </a>
+      
+    </div>
+  </div>
+    
+% end
+</div>
+
+</htmlblock>
+% end

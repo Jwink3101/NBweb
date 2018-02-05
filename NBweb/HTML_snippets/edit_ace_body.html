@@ -1,0 +1,135 @@
+<div id="container"> <!-- container is for CTRL+S saving -->
+
+<form method="post" action="/_edit/{rootpath}" enctype="multipart/form-data">
+<!-- new_page_placeholder -->
+
+<div id="smyles_editor_wrap">
+    <div id="editor">{markdown}</div>
+    <div id="smyles_dragbar"></div>
+</div>
+<textarea name="content" id="content" style="display: none;"></textarea>
+<p>
+Attach file(s)/photo(s): <input type="file" name="upload" multiple />
+<br>
+<input type="checkbox" name="sort_thumb" value="sort_thumb" checked> Rename and make thumbnail of image formats. Create video player of movie formats
+<br>
+Save to upload and append file
+<br>
+<input type="submit" value="Cancel" name="cancel"/>
+<input type="submit" value="Save and Edit" name="saveE"/>
+<input type="submit" value="Save and View" name="saveV"/></p>
+
+<!-- Hidden params to pass on post -->
+<input type="hidden" id="ln" name="ln"> <!-- Filled by JS below -->
+<input type="hidden" id="editsize" name="editsize"> <!-- Filled by JS below -->
+
+</form>
+</div>
+<p>REMINDER: Changes are saved immediately</p>
+
+<script src="/_resources/js/ace/ace.js" type="text/javascript" charset="utf-8"></script>
+<!-- JQUERY now Loaded in head -->
+<!-- <script src="/_resources/js/jquery-1.9.1.min.js"></script> -->
+<script>
+    var editor = ace.edit("editor");
+
+    // Editor Settings
+
+    //editor.setTheme("ace/theme/solarized_light");
+    editor.getSession().setNewLineMode('unix');
+    editor.getSession().setUseWrapMode(true);
+    editor.getSession().setWrapLimitRange(null);
+    editor.getSession().setMode("ace/mode/markdown");
+    editor.getSession().setUseSoftTabs(true);
+    editor.getSession().setTabSize(4);
+    editor.setShowPrintMargin(false);
+
+    // Go to the line numbers
+    editor.focus();
+    editor.gotoLine({linenumber_row},{linenumber_col});
+    
+    // Set the text area to be ACE's
+    var textarea = $('textarea[name="content"]');
+    textarea.val(editor.getSession().getValue()); // Set it to start...
+    editor.getSession().on("change", function () {  // Then on changes
+        textarea.val(editor.getSession().getValue());
+    });
+    
+    var elen = $('input[name="ln"]');
+    editor.getSession().on("change", function () {
+        var cur = editor.selection.getCursor();
+        var row = cur.row;
+        var column = cur.column;
+        elen.val(""+row+"+"+column); //R+C
+    });
+    
+    
+    // Draggable 
+    // Sources:
+    // [1]: https://groups.google.com/forum/#!topic/ace-discuss/UXQ9rgMG44k
+    // [2]: http://jsfiddle.net/tripflex/knnv5e7s/
+    // [3]: (presumably) https://smyl.es/
+    
+    // JW: Added this to store the height
+    var editsize = $('input[name="editsize"]')
+    editsize.val('{ace_editsize}')
+    
+    var dragging = false;
+    var wpoffset = 0;
+    $( '#smyles_dragbar' ).mousedown( function ( e ) {
+        e.preventDefault();
+        window.dragging = true;
+
+        var smyles_editor = $( '#editor' );
+        var top_offset = smyles_editor.offset().top - wpoffset;
+
+        // Set editor opacity to 0 to make transparent so our wrapper div shows
+        smyles_editor.css( 'opacity', 0 );
+
+        // handle mouse movement
+        $( document ).mousemove( function ( e ) {
+
+            var actualY = e.pageY - wpoffset;
+            // editor height
+            var eheight = actualY - top_offset;
+        
+            // Set wrapper height
+            $( '#smyles_editor_wrap' ).css( 'height', eheight);
+        
+            // JW: Added this to store the height
+            editsize.val(eheight)
+            
+            // Set dragbar opacity while dragging (set to 0 to not show)
+            $( '#smyles_dragbar' ).css( 'opacity', 0.15 );
+        
+        } );
+
+    } );
+
+    $( document ).mouseup( function ( e ) {
+
+        if ( window.dragging )
+        {
+            var smyles_editor = $( '#editor' );
+
+            var actualY = e.pageY - wpoffset;
+            var top_offset = smyles_editor.offset().top - wpoffset;
+            var eheight = actualY - top_offset;
+
+            $( document ).unbind( 'mousemove' );
+        
+            // Set dragbar opacity back to 1
+            $( '#smyles_dragbar' ).css( 'opacity', 1 );
+        
+            // Set height on actual editor element, and opacity back to 1
+            smyles_editor.css( 'height', eheight ).css( 'opacity', 1 );
+        
+            // Trigger ace editor resize()
+            editor.resize();
+            window.dragging = false;
+        }
+    
+    } );
+
+</script>
+<p><small><a href="?ace=false">turn OFF Ace editor</a> (save first)</small></p>

@@ -1,0 +1,6 @@
+- [X] Add a wrapper/plugin so that if there is ever a ?nav=xyz, it will do the forward for you. Then, (a) remove the nav logic from main_route, (b) remove the /_nav/ path, (c) change fill_template's special page nav route to just add the ?nav= (since it will get picked up by the wrapper) and (d) allow new buttons on special pages. The wrapper will also need to parse out special routes so: /_all/path/to/dir/?nav=xyz will go to /_xyz/path/to/dir/ but without nav login in the _all path (or any path)
+
+- [ ] Fix CSS issues on multi-image
+    * Interference with SolarizedDark (see personal photo album) -- (major)
+    * Vertical images are cropped instead of scaled (minor)
+- [ ] ACE editor submit without change. Add a notifier so we do not waste bandwidth    

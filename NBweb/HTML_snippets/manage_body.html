@@ -1,0 +1,59 @@
+% # Note: This snippet is designed to be rendered by Bottle's SimpleTemplate Engine
+% # In addition to the regular one (hence, two brackets -- simple template, single -- main
+% # NBweb)
+<h2>File Management</h2>
+
+<p> Manage files and folders. All paths start at root</p>
+{warn}
+
+<h3>Move:</h3>
+<form method="post" action="" enctype="multipart/form-data">
+    <input type="hidden" name="src" placeholder="source" value="{path}">
+    Move <code>{path}</code> to 
+    <br>
+    <input type="text" size="55" name="dest" placeholder="dest" value="{path}">
+    <input type="submit" value="Apply" name="move"/>
+</form>
+
+<h3>Delete:</h3>
+
+<form method="post" action="" enctype="multipart/form-data">
+    <input type="hidden" name="path" value="{path}">
+% if isdir:
+    <%
+        import random
+        letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        challenge = 'recursive_' + ''.join(random.choice(letters) for _ in range(10))
+    %>    
+    <p>Directory deletions only work on empty directories unless 
+    <code>{{challenge}}</code> is entered:</p>
+    <input type="hidden" name="recursive_challenge" value="{{challenge}}">
+    <input type="text" size='43' name="recursive_test" placeholder="enter '{{challenge}}' to apply recursive delete" value="">
+    <input type="submit" value="Delete" name="delete">
+% else:
+    <input type="hidden" value="" name='delete'>
+    <input type="submit" value="Delete file" name="deletefile">
+    <input type="submit" value="Delete file and linked media" name="deletemedia"><br>
+    Enter '<code>d</code>' to confirm: <input type="text" size='5' name="confirm" value="" placeholder=""><br>
+% end
+    <p>Deletions must be manually recovered (if possible) via backups or version control.</p>
+</form>
+
+<h2>Site Management</h2>
+
+<p><button onclick="location.href='/_refresh'" type="button">Refresh DB</button></p>
+
+<h3>Stored Bash Commands</h3>
+<form method="post" action="/_bashcmd" enctype="multipart/form-data">
+% for id,(name,cmd) in enumerate(bashcmds):
+    <p>
+    <input type="submit" value="{{name}}" name="cmd{{id}}">
+    <br>
+    <pre><code>{{'\n'.join('$ ' + l.strip() for l in cmd.split('\n'))}}</code></pre>
+    </p>
+    % if id+1 != len(bashcmds):
+        <hr></hr>
+    % end
+% end
+
+</form>
