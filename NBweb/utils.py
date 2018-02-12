@@ -843,8 +843,9 @@ def html_snippet(name,bottle_template=None):
     """
     text = _load_snippet(name)
 
-    if bottle_template is not None:
+    if isinstance(bottle_template,dict):
         text = bottle.template(text,**bottle_template)
+    
     return text
 
 @memoize

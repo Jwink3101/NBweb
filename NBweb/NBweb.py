@@ -1421,6 +1421,15 @@ def gallery_serve(ppath=''):
 
     if os.path.isdir(galpath):
         abort(403)
+    
+    # Get login and session
+    logged_in,session = check_logged_in()
+    parts = utils.fileparts(galpath,root=NBCONFIG.source) # Will handle it differently if ends with /
+    
+    # Check special properties. Note: exclusions ARE allowed here
+    if utils.patterns_check(parts.rootname,patterns=NBCONFIG.protectect_dirs) and not logged_in:
+        redirect(utils.join('/_login/',utils.join('_galleries',ppath)))
+    
     return static_file(galpath,'/')
 
 ################## Main Web Routes
@@ -1624,12 +1633,30 @@ def random_forward():
 def sitemap():
     return main_route(rootpath='/',map_view=True)
 
+@route('/_rss')
+def rss():
+    # Get the base path of the site. It is everything up to "_rss" 
+    url = request.url[:-len('_rss')-1] # Make sure NOT to include the trailing /
+    
+    # Get the last 10 blogged pages
+    db = db_conn()
+    pages,_ = get_blog_page(0,db,drafts=False)
+    
+    
+    txt =  html_snippet('rss.rss',bottle_template={
+                        'url':url,
+                        'NBCONFIG':NBCONFIG,
+                        'pages':pages,
+                        'rh':utils.remove_html
+                        })
+    response.content_type = 'application/rss+xml' 
+    return txt
+    
 @route('/_blog')
 @route('/_blog/<blog_num:int>')
 def blog(blog_num=0):
     return main_route(rootpath='/',blog_num=blog_num)
-
-
+    
 @route('/')
 @route('/<rootpath:path>')
 def main_route(rootpath='/',map_view=False,blog_num=0):
@@ -1675,9 +1702,6 @@ def main_route(rootpath='/',map_view=False,blog_num=0):
 
     # Static files
     if parts.ext not in NBCONFIG.extensions + ['.html'] and not isdir:
-        # Special Edge Case: photo gallery pages since the items do not ...
-        #if dirname.startswith('_photos'): #... live in the source
-         #   return static_file(path,root=DEST) # - [ ] Fix this if needed
         return static_file(parts.rootname[1:],NBCONFIG.source)
 
     if not isdir and  original_ext != '.html': # Forward to the .html version

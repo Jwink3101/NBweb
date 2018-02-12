@@ -1,0 +1,22 @@
+% import re
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0">
+
+<channel>
+  <title>{{NBCONFIG.title}}</title>
+  <link>{{url}}</link>
+  <description>RSS Feed</description>
+% for page in pages:
+  <item>
+    <title>{{page['meta_title']}}</title>
+    <link>{{url+page['rootbasename']+'.html'}}</link>
+    <guid>{{url+page['rootbasename']+'.html'}}</guid>
+    <description>{{! rh(page['html']) }}</description>
+    <pubDate>{{page['meta_date']}}</pubDate>
+  </item>
+% end
+
+
+</channel>
+
+</rss>

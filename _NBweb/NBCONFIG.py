@@ -58,7 +58,8 @@ edit_users = {'editor':'saltedpasswordhash'}
 #   exclusions = ['/media/*']
 #
 # Warning: if a directory is both blogged and protected, it will STILL show in
-#          the blog pages. Be carefu!
+#          the blog pages. Be carefu! Same for RSS pages
+# Note that /_galleries is also a possible value. (and "*" will protect it)
 blog_dirs = ['/posts/*']
 protectect_dirs = ['/pages/protected/*']
 exclusions = ['/media/*'] # just not shown
