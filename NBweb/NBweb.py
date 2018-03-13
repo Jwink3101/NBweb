@@ -56,13 +56,13 @@ if sys.version_info[0] >= 3:
 
 
 # part of NBweb
-from NBweb import utils
-from NBweb.utils import html_snippet
-from NBweb import todo_tags
-from NBweb import search
-from NBweb import bottlesession
-from NBweb.photo_sort import photo_sort
-from NBweb.photo_parse import photo_parse
+from . import utils
+from .utils import html_snippet
+from . import todo_tags
+from . import search
+from . import bottlesession
+from .photo_sort import photo_sort
+from .photo_parse import photo_parse
 
 FORMATS = {
     'img':[".bmp",".eps", ".gif", ".jpe", ".jpeg", ".jpg",
@@ -71,7 +71,7 @@ FORMATS = {
 }
 
 ##
-# All config files and monkey patch it
+# All config files and inject settings
 import NBCONFIG
 
 NBCONFIG.extensions = [a.lower() for a in NBCONFIG.extensions]
@@ -132,9 +132,11 @@ SCHEMA = [('systempath', 'text'),
           ('outgoing_links', 'text'),
           ('stext', 'text'),
           ('meta_draft', 'text')]
+
 ################### Parsing
-# Define markdown parser
+# Define markdown parser. Also inject it into NBCONFIG
 MD = utils.mmd_(automatic_line_breaks=NBCONFIG.automatic_line_breaks)
+NBCONFIG.MD = MD
 
 # Parsing
 def parse_all(reset=False):
@@ -1361,7 +1363,7 @@ def upload_helper(comments=None,root='/'):
 
         if ext in FORMATS['video'] and sort_thumb:
             # Make it a video
-            newtext = '\n'.join(['<video controls="controls" preload="none">',
+            newtext = '\n'.join(['<video controls="controls" preload="metadata">',
                                  '    <source src="{}" type="video/mp4">'.format(newpath),
                                  '</video>'])
         else:
@@ -2089,56 +2091,12 @@ def fill_template(item,refresh=None,show_path=False,special=False,isdir=False):
 
 #################### Logging -- Useful when using CherryPy or something that
 ####################            doesn't emit logs
-##
-# class AccessLogMiddleware(object):
-#     """
-#     References:
-#         [1] https://stackoverflow.com/a/17824644
-#
-#     And not yet but eventually:
-#         [2] https://stackoverflow.com/questions/31080214/python-bottle-always-logs-to-console-no-logging-to-file
-#     """
-#     def __init__(self, app):
-#         self.app = app
-#
-#     def __call__(self, e, h):
-#         # call bottle and store the return value
-#         ret_val = self.app(e, h)
-#
-#         # log the request
-#         self.log_after_request()
-#
-#         # return bottle's return value
-#         return ret_val
-#
-#     def log_after_request(self):
-#         try:
-#             length = response.content_length
-#         except:
-#             try:
-#                 length = len(response.body)
-#             except:
-#                 length = '???'
-#
-#         D = OrderedDict()
-#
-#         D['ip']         = request.environ.get('REMOTE_ADDR',request.remote_addr)
-#         D['time']       = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-#         D['method']     = request.environ.get('REQUEST_METHOD')
-#         D['uri']        = request.environ.get('REQUEST_URI',request.url)
-#         D['protocol']   = request.environ.get('SERVER_PROTOCOL')
-#         D['status']     = response.status_code
-#         D['length']     = length
-#         D['User-Agent'] = request.headers.get('User-Agent')
-#         #print('-'*60);import traceback as __traceback;import sys as __sys;__traceback.print_stack();print('=+'*30);print('Embed:');from IPython import embed as __embed;__embed();__contt ='Do you want to continue? [Y]/N?\n';__v=__sys.version_info[0];__cont = input(__contt) if __v>2 else raw_input(__contt);_=sys.exit() if __cont.lower()[0]=='n' else ''
-#         #print(json.dumps(D))
-#         #with open('log.log','a',encoding='utf8') as F:
-#         #    F.write(utils.to_unicode(json.dumps(D)))
-
 def log_to_logger(fn):
     '''
     Wrap a Bottle request so that a log line is emitted after it's handled.
     (This decorator can be extended to take the desired logger as a param.)
+    
+    https://stackoverflow.com/a/31093434/3633154
     '''
     @wraps(fn)
     def _log_to_logger(*args, **kwargs):
@@ -2158,13 +2116,6 @@ def log_to_logger(fn):
         #logger.info(json.dumps(D))
         logger.info(json.dumps(list(D.values()))) # Will be ordered as above but shorter
 
-
-        # modify this to log exactly what you need:
-#         logger.info('%s %s %s %s %s' % (request.remote_addr,
-#                                         request_time,
-#                                         request.method,
-#                                         request.url,
-#                                         response.status))
         return actual_response
     return _log_to_logger
 

@@ -8,7 +8,7 @@ from collections import defaultdict
 import math
 
 ## NBweb
-from NBweb import utils
+from . import utils
 
 def todos(db):
     todo_DB = {}

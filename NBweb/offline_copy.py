@@ -13,8 +13,8 @@ if sys.version_info[0] >= 3:
 
 from bottle import HTTPError
 
-from NBweb import utils
-from NBweb import NBweb
+from . import utils
+from . import NBweb
 import NBCONFIG
 
 # Incomplete todo:

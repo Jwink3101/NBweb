@@ -25,7 +25,7 @@ if sys.version_info >= (3,):
 
 import bottle
 ## NBweb
-from NBweb import stop_words # Source: http://www.ranks.nl/stopwords
+from . import stop_words # Source: http://www.ranks.nl/stopwords
 
 
 class mmd_(object):
@@ -880,7 +880,7 @@ def clean_new_rootpath(rootpath):
     # Convert any odd characters to ASCII and then back to Unicode
     rootpath = unicodedata.normalize('NFKD', rootpath).encode('ascii','ignore') # https://www.peterbe.com/plog/unicode-to-ascii conver to ascii
     rootpath = to_unicode(rootpath)
-    rootpath = ''.join(r for r in rootpath if r in ALLOWED_CHARS+'/')
+    rootpath = ''.join(r for r in rootpath if r in ALLOWED_CHARS)
 
     while rootpath[0] not in alphanumeric:
         rootpath = rootpath[1:]

@@ -9,7 +9,7 @@ from collections import defaultdict
 from sqlite3 import OperationalError
 
 # import utils
-from NBweb import utils
+from . import utils
 join = utils.join
 
 """
