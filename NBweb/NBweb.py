@@ -70,7 +70,6 @@ FORMATS = {
     'video':['.mp4','.mov'],
 }
 
-##
 # All config files and inject settings
 import NBCONFIG
 
@@ -79,6 +78,9 @@ NBCONFIG.exclusions = list(set(NBCONFIG.exclusions + ['.git/','.svn/','.*','_*']
 USERS = NBCONFIG.edit_users.copy()
 USERS.update(NBCONFIG.protected_users)
 REQUIRELOGIN = len(USERS) > 0
+NBCONFIG.FORMATS = FORMATS
+
+
 
 with open(utils.join(NBCONFIG.source,'_NBweb/template.html'),encoding='utf8') as F:
     template = F.read()
@@ -112,7 +114,7 @@ re_links = re.compile('href="(.+?)"',re.IGNORECASE)
 
         # ('id','int'),         ### id is TEMP. Will remove later and use rowid
 SCHEMA = [('systempath', 'text'),
-          ('rootname', 'text'),
+          ('rootname', 'text PRIMARY KEY'),
           ('rootdirname', 'text'),
           ('rootbasename', 'text'),
           ('ext', 'text'),
@@ -121,6 +123,7 @@ SCHEMA = [('systempath', 'text'),
           ('meta_date', 'text'),
           ('meta_title', 'text'),
           ('meta_tags', 'text'),
+          ('meta_id','text'),
           ('meta_other', 'text'),
           ('ref_name', 'text'),
           ('draft', 'int'),
@@ -200,9 +203,6 @@ def parse_path(systempath,db,commit=True,force=False):
 
     if parts.ext not in NBCONFIG.extensions:
         return
-    
-#     if parts.ext == '.gallery':
-#         force = True # ALWAYS refresh on gallery pages to catch name changes
 
     # Shouldn't happen but just in case
     if exclusion_check(parts.rootname,isdir=False):
@@ -244,7 +244,7 @@ def parse_path(systempath,db,commit=True,force=False):
         filetext = photo_parse(filetext,meta,NBCONFIG)
 
     # Store the metadata as meta_key for allowed keys
-    meta_keys = ['title','date','tags','draft'] # everything else will be stored as one entry
+    meta_keys = ['title','date','tags','draft','id'] # everything else will be stored as one entry
     meta_other = dict()
     for key,value in meta.items():
         if key in meta_keys:
@@ -310,6 +310,7 @@ def parse_path(systempath,db,commit=True,force=False):
 
     # Note that at this point, outgoing_links will ALL be absolute
     # Make them end in .html
+    
     item['html'],outgoing_links = utils.convert_internal_extension(\
                                     item['html'],extensions=NBCONFIG.extensions,\
                                     return_links=True)
@@ -334,7 +335,7 @@ def parse_path(systempath,db,commit=True,force=False):
     if commit:
         db.commit()
 
-    item['cached'] = False # Note in the DB but useful
+    item['cached'] = False # Not in the DB but useful
     return item
 
 
@@ -499,11 +500,27 @@ def cross_ref(item,db):
     """
     crossref = []
 
-    outgoing = item['outgoing_links'].split(',')
-    while '' in outgoing:
-        outgoing.remove('')
-
-    outgoing.sort(key=lambda a:a.lower())
+    outgoing = set()
+    for link in item['outgoing_links'].split(','):
+        link = link.strip()
+        if link == '': 
+            continue
+            
+        # ID links
+        if link.startswith('/_id/'):
+            linkid = link[5:]
+            # Get the first item with the ID. 
+            match = db.execute("""  SELECT rootbasename 
+                                    FROM file_db 
+                                    WHERE meta_id=?""",(linkid,)).fetchone()
+            if match is None:
+                print('\nBroken link:\n to: {}\n in: {}'.format(link,item['rootbasename']))
+                continue
+            link = match['rootbasename'] + '.html'
+        
+        outgoing.add(link)
+    
+    outgoing = sorted(outgoing,key=lambda a:a.lower())
 
     if len(outgoing) > 0:
         crossref.append('<p>Outgoing:</p>\n<ul>')
@@ -515,12 +532,25 @@ def cross_ref(item,db):
                 continue
             crossref.append('<li><a href="{rootbasename}.html">{ref_name}</a></li>'.format(**subitem))
         crossref.append('</ul>\n')
-
+    
+    # Query for all incoming links. All `outgoing_links` DB column are *full*
+    # paths. Note that the SQL query can be fooled since it is a 
+    # `LIKE %/link/to/me% query so anything starting with it will come up.
+    # We check for that later. If this current item does not have an ID, use
+    # some junk
+    idquery = item.get('meta_id')
+    if idquery is None or len(idquery) == 0:
+        idquery = utils.randstr(50)
+    else:
+        idquery = '/_id/' + idquery
+    
     incoming = db.execute("""
-            SELECT * from file_db WHERE outgoing_links LIKE ? ORDER BY rootbasename""",
-            ('%' + item['rootbasename'] + '.%',)
-        ).fetchall()
-
+            SELECT * FROM file_db 
+            WHERE outgoing_links LIKE ? 
+            OR outgoing_links LIKE ?
+            ORDER BY rootbasename""",
+            ('%' + item['rootbasename'] + '.%','%' + idquery + '%')).fetchall() 
+            
     if len(incoming) > 0:
         crossref.append('<p>Incoming:</p>\n<ul>')
         for subitem in incoming:
@@ -530,9 +560,20 @@ def cross_ref(item,db):
                 is_edit_user = session.get('name','') in NBCONFIG.edit_users
                 if not is_edit_user:
                     continue
-            # Make sure that it *actually* links to this page and not something that starts the same
-            subitem_outlinks_base = (os.path.splitext(a)[0] for a in subitem['outgoing_links'].split(','))
-            if not any(s == item['rootbasename'] for s in subitem_outlinks_base):
+            
+            # Make sure that it *actually* links to this page and not something 
+            # that starts the same (see note above)
+            subitem_outgoings = subitem['outgoing_links'].split(',')
+            found = False
+            for subitem_outgoing in subitem_outgoings:
+                if subitem_outgoing == idquery: # Compare ID
+                    found = True
+                    break
+                # compare the base of the outgoing link to rootbasename
+                if os.path.splitext(subitem_outgoing)[0] == item['rootbasename']:
+                    found = True
+                    break
+            if not found:
                 continue
 
             crossref.append('<li><a href="{rootbasename}.html">{ref_name}</a></li>'.format(**subitem))
@@ -936,9 +977,12 @@ def edit_post(rootpath='/'):
             parts = utils.fileparts(systemname,NBCONFIG.source)
 
 
+    # Clean up & save
+    content = content.replace(u'\ufeff','') # Byte Order Marks
+    content = content.replace('\r','') # Remove `^M` characters
     with open(systemname,'w',encoding='utf8') as F:
-        F.write(content.replace('\r','')) # Remove `^M` characters
-
+        F.write(content) 
+    
     rootbasename = strip_leading(parts.rootbasename)
 
     if 'saveV' in request.POST:
@@ -1004,6 +1048,7 @@ def edit(rootpath='/',new=False):
             filetext = ""
         else:
             filetext = utils.datetime_adjusted(NBCONFIG.time_zone).strftime(NBCONFIG.new_page_txt)
+            filetext = filetext.format(numeric_id=get_numeric_id())
         item['title'] = 'New Page'
         newtype = request.query.get('type','file')
         if newtype == 'photo':
@@ -1434,6 +1479,32 @@ def gallery_serve(ppath=''):
     
     return static_file(galpath,'/')
 
+def get_numeric_id():
+    """
+    Return the next numeric id that is number of pages +1 increased intil the id
+    is not present
+    """
+    db = db_conn()   
+    N = db.execute('SELECT Count(*) FROM file_db').fetchone()['Count(*)']
+    N += 1
+    
+    def _indb(id0):
+        return db.execute("""
+                        SELECT rootname FROM file_db
+                        WHERE meta_id=?""",(id0,)).fetchone() is not None
+    # Try the next 50 then fall back
+    for id0 in range(N,N+50):
+        if not _indb(id0):
+            break
+    else: # somehow did not find a match
+        for id0 in xrange(N+1): # There *must* be a match
+            if not _indb(id0):
+                break
+        else: # I do not see how you could end up here...
+            raise ValueError('Error in finding suitable id')    
+    return id0
+            
+    
 ################## Main Web Routes
 @route('/_search')
 def return_search():
@@ -1653,6 +1724,23 @@ def rss():
                         })
     response.content_type = 'application/rss+xml' 
     return txt
+
+
+@route('/_id/<meta_id:path>') # use path filter to allow *anything*
+def id_forward(meta_id=None):
+    """
+    Find and forward to the id
+    """
+    if meta_id is None:
+        abort(404)
+    db = db_conn()
+    match = db.execute("""  SELECT rootbasename 
+                            FROM file_db 
+                            WHERE meta_id=?""",(meta_id,)).fetchone()
+    if match is None:
+        abort(404)
+        
+    return redirect(match['rootbasename']+'.html')
     
 @route('/_blog')
 @route('/_blog/<blog_num:int>')
@@ -2075,8 +2163,10 @@ def fill_template(item,refresh=None,show_path=False,special=False,isdir=False):
     item['content'] = item.get('content',item['html'])
 
     if show_path and 'rootname' in item:
-        item['content'] = '<p><code>{rootname}</code></p>\n'.format(**item) + \
-                          item['content']
+        nametxt = '<p><code>{rootname}</code>\n'.format(**item)
+        if item.get('meta_id') and NBCONFIG.display_page_id:
+            nametxt += '<br><small><code>/_id/{meta_id}</code></small>'.format(**item)
+        item['content'] =  nametxt + '</p>' + item['content']
 
 
     item['crossref'] = item.get('crossref','')
@@ -2145,10 +2235,10 @@ def init_db():
     cursor.execute(sql)
     db.commit()
 
-    cursor.execute("""\
-        CREATE UNIQUE INDEX IF NOT EXISTS
-        indx_rootname ON file_db (rootname)""")
-    db.commit()
+#     cursor.execute("""\
+#         CREATE UNIQUE INDEX IF NOT EXISTS
+#         indx_rootname ON file_db (rootname)""")
+#     db.commit()
     db.close()
 
 def navwrapper(callback):

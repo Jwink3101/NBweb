@@ -27,6 +27,10 @@ import bottle
 ## NBweb
 from . import stop_words # Source: http://www.ranks.nl/stopwords
 
+def randstr(N=10):
+    return ''.join(random.choice('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789') for _ in range(N))
+
+
 
 class mmd_(object):
     def __init__(self,automatic_line_breaks=True):
@@ -48,7 +52,7 @@ class mmd_(object):
 
         self.Markdown = markdown.Markdown(extensions=self.extensions)
             
-        self.rand_replacement = ''.join(random.choice('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ') for _ in range(50))
+        self.rand_replacement = randstr(N=50)
 
     def __call__(self,text_in):
         """
@@ -323,6 +327,8 @@ def convert_internal_extension(html,extensions=None,return_links=False):
     """
     Convert all internal links to .html if they are in any of the
     allowed extensions (we don't want to convert images)
+    
+    Also, since it is compute, return links
     """
     if extensions is None:
         extensions= [ ]
@@ -338,6 +344,11 @@ def convert_internal_extension(html,extensions=None,return_links=False):
         path = link.group(2)
 
         if not is_internal_link(path):
+            continue
+
+        # Special case for ID
+        if path.startswith('/_id/'):
+            links.add(path)
             continue
 
         base,ext = os.path.splitext(path)
@@ -980,8 +991,6 @@ def overlapping_window(iterable,N=2):
         if len(wind) == 0:
             break
         yield tuple(wind)
-
-
 
 
 

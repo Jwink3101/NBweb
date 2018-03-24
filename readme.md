@@ -18,11 +18,53 @@ Version 3.5 of my notebook software. Turn a folder of markdown into a notebook w
 
 This is not designed for the general public but certainly *can* be if someone wishes. It is specially designed for my uses (a public blog/notebook, a private notebook, and photo gallery)
 
+## Page Metadata
+
+There is *no required metadata* on a page. If no meta-data is present, the first line is considered the title:
+
+```markdown
+title
+    
+text
+```
+
+However, metadata can be set by `field:value` at the top. The only requirment is that the first line be `title:<pagetitle>`.
+
+```markdown
+Title: Page title
+Date: 2018-03-23
+Author: Jwink3101
+ID: 874
+Draft: False
+
+text
+```
+
+Some metadata has special meaning such as `title`, `date`, `id`, and `draft` (the latter two are described below)  
+
+### Page ID
+
+An `id:<id>` metadata tag can be set and then any page can link to it via `/_id/<id>`. IDs can be anything but if they are not unique, there is no guarantee of the order.
+
+As noted in `NBCONFIG.py`, You can prefill the ID with a number close to the page number with `id:{numeric_id}` in the template. Alternatively, you can use the date with something like: `id:%Y-%m-%d%H%M%S`
+
+### Draft Pages
+
+A draft page will *only* show for an `edit` user and will show with "`[DRAFT]`" surrounding the text. To make a draft page, it **must** be a page with meta-data and have the metadata:
+
+    draft: true
+
+set.
+
 ## Links
 
 One of the major features is that any internal link is noted at the bottom of each page so you can see what links to this page or from.
 
 Links can either be relative (e.g. `[file](file.md)`) or absolute with a leading `/` (e.g `[file](/path/to/file.md)`). Same goes for media, etc
+
+If a page has an ID, you can also link to it via: `/_id/<ID>`. Note that if for
+some reason the ID is *not* unique, the order of the result is not guaranteed
+
 
 ## Special Markdown Additions
 
@@ -83,6 +125,10 @@ Pages are searched if they are in the database. Therefore, they must be viewed a
 
 Settings are set via the `NBSETTINGS.py` file. All settings are fully documented there. That also explains additional functionality such as how media is sorted, how new pages are names, the default templates, etc
 
+## Blogged Pages
+
+By defining a glob-pattern for blogged pages (such as `/posts/*`) all files in that directory will show as a blog. The homepage will be replaced with the first (0^th) blog page. The sitemap can still be found via `/_sitemap` and the rest of the blog pages are `/_blog/<pagenumber>` 
+
 ## Special Pages
 
 There are a few special pages:
@@ -92,6 +138,9 @@ There are a few special pages:
     * `/_todo/txt` shows them in text format
 * `/_tags` Show all tags (either in `tags:` metadata or `tt_tag` inline)
 * `/_random` Randomly go to a folder
+* `/_id/<ID>` will forward to the ID if it exists
+* `/_blog/<pagenumber>` the `pagenumber` blog page (if applicable)
+* `/_sitemap` If no blogged pages, the same as `/`. Otherwise, the directory listing
 
 There are others that will depend on the login status and will be in the dropdown
 
@@ -119,14 +168,6 @@ The only issue is that these pages cannot be deleted via the web interface. Just
 
 - [ ] Media Viewer? Certain directories?
 - Cannot delete `indexm.md` pages
-
-## Draft Pages
-
-A draft page will *only* show for an `edit` user and will show with "`[DRAFT]`" surrounding the text. To make a draft page, it **must** be a page with meta-data and have the metadata:
-
-    draft: true
-
-set.
 
 ## Exclusions
 

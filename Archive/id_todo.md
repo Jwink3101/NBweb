@@ -1,0 +1,9 @@
+- [X] Parse ID into DB
+- [X] Display IDs in the page
+- [X] Make sure IDs are in outgoing links (and parse it to the rootname)
+- [X] IDs in incoming links
+- [X] /_id/ routing
+- [ ] Tool to add ID
+- [X] Tool to get next numeric id
+- [X] Add ID to example config including numeric or date
+- [X] Documentation

@@ -58,7 +58,7 @@ edit_users = {'editor':'saltedpasswordhash'}
 #   exclusions = ['/media/*']
 #
 # Warning: if a directory is both blogged and protected, it will STILL show in
-#          the blog pages. Be carefu! Same for RSS pages
+#          the blog pages. Be careful! Same for RSS pages
 # Note that /_galleries is also a possible value. (and "*" will protect it)
 blog_dirs = ['/posts/*']
 protectect_dirs = ['/pages/protected/*']
@@ -106,14 +106,23 @@ use_ace_editor = 'auto'
 # Set the default text on a new page. The text here will be parsed by
 # datetime.now().strftime so that dates may be included. Note that this
 # setting does *not* apply to the "_quick_add" route
+# Also the variables {numeric_id} is a suggested numeric id (based on the
+# number of pages and the existence of an id)
+
+# ID suggestions: Use either `id: {numeric_id}` or `id: %Y-%m-%d%H%M%S`
+
 new_page_txt = """\
 Title:
 Date: %Y-%m-%d %H:%M:%S
+id: {numeric_id}
 Tags:
+Draft: False
 
 CONTENT
 
 """
+
+
 
 # Define how to set the filename when it isn't provided. The format is
 # based on the input metadata. The following keys are provided. Note that
@@ -176,6 +185,12 @@ show_empty = False
 # of a line as a line break. Set to True to override this and have line-breaks
 # follow that of the content. False will treat as one
 automatic_line_breaks = True
+
+# If (and only if) a page has a set id, it can also be displayed under the 
+# page path (always displayed when appropriate). This is useful if linking to
+# page id's instead of full paths
+display_page_id = False
+ 
 
 ############################################
 ## Photo Galleries
