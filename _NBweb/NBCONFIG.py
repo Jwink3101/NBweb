@@ -96,6 +96,10 @@ https_login = False
 ## Edit Settings
 ############################################
 
+# Specify the local time zone. It MUST be in the format '+NNNN'
+# such as '-0500'. Or set as None to use the local time of the server
+time_zone = '-0700'
+
 # Tells NBweb whether or not to provide an ACE editing window. Options
 # are True, False, or 'auto'. 'auto' will do its best to detect if using a
 # mobile device and not use ACE.
@@ -104,12 +108,10 @@ https_login = False
 use_ace_editor = 'auto'
 
 # Set the default text on a new page. The text here will be parsed by
-# datetime.now().strftime so that dates may be included. Note that this
-# setting does *not* apply to the "_quick_add" route
+# datetime.strftime so that dates may be included (based on time-zone adjusted)
 # Also the variables {numeric_id} is a suggested numeric id (based on the
 # number of pages and the existence of an id)
-
-# ID suggestions: Use either `id: {numeric_id}` or `id: %Y-%m-%d%H%M%S`
+# ID suggestions: Use either `id: {numeric_id}` or `id: %Y%m%d%H%M%S`
 
 new_page_txt = """\
 Title:
@@ -122,7 +124,12 @@ CONTENT
 
 """
 
+## Photo/media options
 
+# Specify id string for new media pages (but do NOT include "id:"). It has the 
+# same options of new_page_txt above where you can specify "{numeric_id}" and/or
+# a strftime format
+new_media_id_string = '{numeric_id}' # or `%Y%m%d%H%M%S`
 
 # Define how to set the filename when it isn't provided. The format is
 # based on the input metadata. The following keys are provided. Note that
@@ -140,9 +147,7 @@ CONTENT
 auto_filemame = '{short_date}_{title}'
 
 
-# Specify the local time zone. It MUST be in the format '+NNNN'
-# such as '-0500'. Or set as None to use the local time of the server
-time_zone = '-0700'
+
 
 
 #############################################

@@ -925,7 +925,15 @@ def edit_post(rootpath='/'):
                   content += dtstring
 
             content += '\ndate: ' + dtstring
-
+            
+            # Add an id:
+            if NBCONFIG.new_media_id_string is not None:
+                id_str =  '\nid: ' +  NBCONFIG.new_media_id_string.strip()
+                id_str = utils.datetime_adjusted(NBCONFIG.time_zone).strftime(id_str)
+                id_str = id_str.format(numeric_id=get_numeric_id())
+                
+                content += id_str + '\n'
+                
             filename = dtstring + '_' + filename
 
         elif len(filename) == 0:
