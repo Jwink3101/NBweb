@@ -144,7 +144,7 @@ new_media_id_string = '{numeric_id}' # or `%Y%m%d%H%M%S`
 #       {loc_short_date} -- ''%Y-%m-%d' at current time locally
 
 #auto_filename = '{title}'
-auto_filemame = '{short_date}_{title}'
+auto\_filename = '{short_date}_{title}'
 
 
 

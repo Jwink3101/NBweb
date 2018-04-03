@@ -1742,14 +1742,22 @@ def id_forward(meta_id=None):
     if meta_id is None:
         abort(404)
     db = db_conn()
-    match = db.execute("""  SELECT rootbasename 
+    matches = db.execute("""SELECT rootbasename,systempath 
                             FROM file_db 
-                            WHERE meta_id=?""",(meta_id,)).fetchone()
-    if match is None:
-        abort(404)
-        
-    return redirect(match['rootbasename']+'.html')
+                            WHERE meta_id=?""",(meta_id,))
     
+    for match in matches: # in order
+        # Handle if a page was moved.
+        if not os.path.exists(match['systempath']):
+            db.execute("""DELETE FROM file_db 
+                          WHERE systempath=?""",(match['systempath'],))
+            db.commit()
+            continue
+        return redirect(match['rootbasename']+'.html')
+
+    # This means one wasn't found
+    abort(404)
+        
 @route('/_blog')
 @route('/_blog/<blog_num:int>')
 def blog(blog_num=0):
