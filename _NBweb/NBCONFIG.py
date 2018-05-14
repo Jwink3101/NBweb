@@ -15,18 +15,6 @@ source = os.path.normpath(os.path.join(os.path.split(os.path.abspath(__file__))[
 # Specify a FULL scratch path
 scratch_path = os.path.join(source,'_scratch')
 
-try:
-    os.makedirs(scratch_path)
-except OSError:
-    pass
-
-# Set the DB. Note that the program uses `dataset` which uses SQLAlchemy. Use that system
-# For this, set as this directory
-DBpath = os.path.join(scratch_path,'DB.sqlite')
-DBpath = 'sqlite:///' + DBpath
-
-## Other settings
-
 # Specify extensions to parse and allow. The first one is also the default
 extensions = ['.md','.gallery']
 title = 'Notebooks'
@@ -144,10 +132,7 @@ new_media_id_string = '{numeric_id}' # or `%Y%m%d%H%M%S`
 #       {loc_short_date} -- ''%Y-%m-%d' at current time locally
 
 #auto_filename = '{title}'
-auto\_filename = '{short_date}_{title}'
-
-
-
+auto_filename = '{short_date}_{title}'
 
 
 #############################################
@@ -195,7 +180,14 @@ automatic_line_breaks = True
 # page path (always displayed when appropriate). This is useful if linking to
 # page id's instead of full paths
 display_page_id = False
- 
+
+# Specify whether or not to show tags, todos, search for sub directories
+# in the appropriate place. For todo and tags, it'll show with "all sub pages"
+# and for search, the button will *always* be there
+show_subdir_options = {'search':True,
+                       'todo': True,
+                       'tags':True,
+                      }
 
 ############################################
 ## Photo Galleries

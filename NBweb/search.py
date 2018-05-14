@@ -59,7 +59,7 @@ def combine_score(direct,link):
 FMT =  '<p><a href="{path}.html">{name}</a>'
 FMT += '<br>{path} <small>({score:0.2f})</small></p>'
 
-def search(query,db):
+def search(query,db,loc=None):
     incoming_count = defaultdict(lambda: {'count':0,'score':0}) 
     
     Nmax = 4 # largest window (plus the original)
@@ -95,13 +95,29 @@ def search(query,db):
     
     query_wild_cards = query.split()
     query_wild_cards = ['%{}%'.format(a) for a in query_wild_cards]
-    sql = 'SELECT * FROM file_db WHERE '
-    # Add `stext LIKE ? `
-    sql +=  ' OR '.join(['stext LIKE ?']*len(query_wild_cards)) \
-         +  ' OR ' \
-         +  ' OR '.join(['lower(meta_title) LIKE ?']*len(query_wild_cards))
     
-    for page in db.execute(sql,query_wild_cards*2):
+    # This is what gets filled later
+    qmarks = []
+    
+    sql = 'SELECT * FROM file_db WHERE '
+    
+    # Add `stext LIKE ? `
+    sql += ''.join([
+              '(', 
+              ' OR '.join(['stext LIKE ?']*len(query_wild_cards)) ,
+              ' OR ' ,
+              ' OR '.join(['lower(meta_title) LIKE ?']*len(query_wild_cards)),
+              ')',
+              ])
+    qmarks.extend(query_wild_cards*2)
+    
+    if loc: # add location
+        loc = loc = utils.join('/',os.path.dirname(loc),'%') # So it is just the /dir + wildcard
+        sql += ' AND (rootdirname LIKE ?)'
+        qmarks.append(loc)
+        
+    
+    for page in db.execute(sql,qmarks):
         name = page['rootbasename']
         text = page['stext']
         #title = utils.clean_for_search(page.get('meta_title','')) # SLOW. Just use regular

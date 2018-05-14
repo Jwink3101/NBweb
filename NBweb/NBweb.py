@@ -57,7 +57,7 @@ if sys.version_info[0] >= 3:
 
 # part of NBweb
 from . import utils
-from .utils import html_snippet
+from .utils import html_snippet,strip_leading
 from . import todo_tags
 from . import search
 from . import bottlesession
@@ -70,6 +70,7 @@ FORMATS = {
     'video':['.mp4','.mov'],
 }
 
+####################################
 # All config files and inject settings
 import NBCONFIG
 
@@ -80,7 +81,17 @@ USERS.update(NBCONFIG.protected_users)
 REQUIRELOGIN = len(USERS) > 0
 NBCONFIG.FORMATS = FORMATS
 
+NBCONFIG.scratch_path = os.path.abspath(NBCONFIG.scratch_path)
+try:
+    os.makedirs(NBCONFIG.scratch_path)
+except OSError:
+    pass
 
+# Set the DB. Note that the program uses `dataset` which uses SQLAlchemy. Use that system
+# For this, set as this directory
+NBCONFIG.DBpath = os.path.join(NBCONFIG.scratch_path,'DB.sqlite')
+
+#################################
 
 with open(utils.join(NBCONFIG.source,'_NBweb/template.html'),encoding='utf8') as F:
     template = F.read()
@@ -361,7 +372,7 @@ def dir_listings(rootname,db,show_empty=False,drafts=False):
         sub = db.execute(query,(systemdirname + '%',)).fetchone()
         return sub is not None and len(sub)>0
 
-    res = ['<p><a href="{}"><strong>All Sub Pages</strong></a></p>'.format( utils.join('/_all',strip_leading(rootname)) ) ]
+    res = ['<p>{}</p>'.format(utils.all_sub_txt(rootname,strong=True))]
     res.append('<ul>')
 
     if not (rootname == '' or rootname == '/'):
@@ -405,8 +416,9 @@ def dir_listings(rootname,db,show_empty=False,drafts=False):
 
         elif has_subitems(sub_systempath) or show_empty:
             rootname = get_rootname(sub_systempath)
-            name = os.path.split(rootname)[-1]
-            txt = '<li><a href="{rootname}/"><small>▶</small> {name}/</a> -- <a href="/_all{rootname}"><strong>All Sub Pages</strong></a></li>'.format(rootname=rootname,name=name)
+            name = os.path.split(rootname[:-1])[-1] # Remove the trailing '/' on rootname
+            txt = '<li><a href="{rootname}"><small>▶</small> {name}</a> -- {sub}'
+            txt = txt.format(rootname=rootname,name=name,sub=utils.all_sub_txt(rootname))
             sortname = os.path.basename(sub_systempath).lower()
             listings_dirs.append((sortname,txt))
     
@@ -1518,54 +1530,65 @@ def get_numeric_id():
 def return_search():
     query = request.query.get('q',default='')
     query = utils.to_unicode(query)
+    
+    loc = request.query.get('loc',default=None)
+    
     content = "NBweb search engine results (beta)"
+    
     db = db_conn()
 
     if len(query)>0:
-        results = search.search(query,db)
+        results = search.search(query,db,loc=loc)
         content += '\n<hr></hr>\n' + results
+    
     item = {'title': 'Search: "{}"'.format(query),'html':content}
     db.close()
     return fill_template(item,special=True)
 
-@route('/_todo')
-@route('/_todo/')
-def return_todo(txt=False):
-    db = db_conn()
-    todo_text,todo_html = todo_tags.todos(db)
-    if txt:
-        response.content_type = 'text/text; charset=UTF8' # Just raw text
-        return todo_text
-    item = {'title':'To Do Items','html':todo_html}
-    db.close()
-    return fill_template(item,special=True)
-
-@route('/_todo/txt')
-def return_todo_txt():
-    db = db_conn()
-    todo_text,todo_html = todo_tags.todos(db)
-    response.content_type = 'text/text; charset=UTF8' # Just raw text
-    db.close()
-    return todo_text
-
+#### Special paths to add queries
 @route('/_no_ref/<rootname:path>')
 def stop_refresh(rootname='/'):
     redirect(utils.join('/',rootname + '?refresh=-1'))
 @route('/_start_ref/<rootname:path>')
 def start_refresh(rootname='/'):
     redirect(utils.join('/',rootname + '?refresh=10'))
+####
+
+
+# - [ ] Decide if I want to have things like /_todo<loc:path> or /_todo/<loc:path>
+#       The former allows both /_todo and /_todo/ but also means things like
+#       /_tododsaasdas will work.
+
+@route('/_todo')
+@route('/_todo<loc:path>')
+def return_todo(loc=None):
+    db = db_conn()
+    todo_text,todo_html = todo_tags.todos(db,loc=loc)
+    item = {'title':'To Do Items','html':todo_html}
+    db.close()
+    return fill_template(item,special=True)
+
+@route('/_todotxt')
+@route('/_todotxt<loc:path>')
+def return_todo_txt(loc=None):
+    db = db_conn()
+    todo_text,todo_html = todo_tags.todos(db,loc=loc)
+    response.content_type = 'text/text; charset=UTF8' # Just raw text
+    db.close()
+    return todo_text
+
 
 @route('/_tags')
-@route('/_tags/')
-def return_tags():
+@route('/_tags<loc:path>')
+def return_tags(loc=None):
     db = db_conn()
-    tags_html = todo_tags.tags(db)
+    tags_html = todo_tags.tags(db,loc=loc)
     item = {'title':'All Tags','html':tags_html}
     db.close()
     return fill_template(item,special=True)
 
-@route('/_latest/')
-@route('/_latest/<rootpath:path>')
+@route('/_latest')
+@route('/_latest<rootpath:path>')
 def get_latest_rootname(rootpath='/'):
     systemname = get_systemname(rootpath,auto_abort=True)
 
@@ -1654,7 +1677,8 @@ def allpage(rootpath='/'):
     item['html'] = utils.combine_html(all_list,\
                     annotate=NBCONFIG.annotate_all_page,add_date=False,show_path=True)
     item['title'] = 'All Sub Pages: ' + rootbasename
-    item['breadcrumb'] = utils.bread_crumb(rootbasename,'All Sub Pages')
+    item['breadcrumb'] = utils.bread_crumb(rootbasename,'*All Sub Pages*')
+    item['rootbasename'] = rootbasename
     return fill_template(item,special=True)
 
 
@@ -1877,8 +1901,10 @@ def main_route(rootpath='/',map_view=False,blog_num=0):
         else:
             show_empty = NBCONFIG.show_empty
         item['html'] = html0 + dir_listings(parts.rootdirname,db,show_empty=show_empty,drafts=is_edit_user)
-        item['rootbasename'] = parts.rootdirname # This will also allow for a breadcrumb
-        item['rootname'] = item['rootbasename'] + ('' if item['rootbasename'].endswith('/') else '/')# For the path
+        item['rootbasename'] = parts.rootdirname
+        if not item['rootbasename'].endswith('/'):
+            item['rootbasename'] += '/'
+        item['rootname'] = item['rootbasename'] 
         item['meta_title'] = os.path.split(parts.rootdirname)[-1]
 
         db.close()
@@ -2017,6 +2043,7 @@ def get_rootname(*systempaths,**KW):
     auto_abort = KW.get('auto_abort',False)
 
     systempath = utils.join(*systempaths)
+    is_dir = os.path.isdir(systempath)
 
     rootname = os.path.relpath(systempath,NBCONFIG.source)
 
@@ -2032,12 +2059,11 @@ def get_rootname(*systempaths,**KW):
     if rootname == '.':
         rootname = ''
 
-    return '/' + rootname
-
-def strip_leading(txt):
-    while txt.startswith('/'):
-        txt = txt[1:]
-    return txt
+    rootname =  '/' + rootname
+    
+    if is_dir and not rootname.endswith('/'):
+        rootname += '/'
+    return rootname
 
 re_template = re.compile('\{\{(.*?)\}\}')
 def fill_template(item,refresh=None,show_path=False,special=False,isdir=False):
@@ -2083,11 +2109,20 @@ def fill_template(item,refresh=None,show_path=False,special=False,isdir=False):
         refresh = -1
 
     #### Search and scroll wheel (all under the 'search' keyword)
+    
+    ## Search
+    # Add a "search here" button for pages/directories
+    if 'rootbasename' in item and NBCONFIG.show_subdir_options['search']:
+        herebutton ='<button type="submit" name="loc" value="{rootbasename}">Search Subdirs</button>'.format(**item)
+    else:
+        herebutton = ''
+    
     item['search'] ="""\
         <form action="/_search">
         <input type="text" name="q" placeholder="Search (beta)">
         <input type="submit" name="" value="Search">
-        </form>"""
+        {herebutton}
+        </form>""".format(herebutton=herebutton)
 
     ### The scrollwheel goes with search
     logged_in,session = check_logged_in()
@@ -2179,6 +2214,7 @@ def fill_template(item,refresh=None,show_path=False,special=False,isdir=False):
     item['content'] = item.get('content',item['html'])
 
     if show_path and 'rootname' in item:
+        item['rootname'] = item['rootname'].replace('//','/') # edge case
         nametxt = '<p><code>{rootname}</code>\n'.format(**item)
         if item.get('meta_id') and NBCONFIG.display_page_id:
             nametxt += '<br><small><code>/_id/{meta_id}</code></small>'.format(**item)
@@ -2226,15 +2262,6 @@ def log_to_logger(fn):
     return _log_to_logger
 
 def db_conn():
-    ######## TEMP
-    if NBCONFIG.DBpath.startswith('sqlite://'):
-        NBCONFIG.DBpath = NBCONFIG.DBpath[9:] # Strip "sqlite://"
-        if NBCONFIG.DBpath.startswith('//'):
-            NBCONFIG.DBpath = NBCONFIG.DBpath[1:] # Absolute path
-        elif NBCONFIG.DBpath.startswith('/'):
-            NBCONFIG.DBpath = '.' + NBCONFIG.DBpath # Relative
-    ######### /TEMP
-
     db = sqlite3.connect(NBCONFIG.DBpath)
     db.text_factory = unicode
     db.row_factory = utils.dict_factory

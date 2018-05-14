@@ -3,6 +3,7 @@
 from __future__ import division, print_function, unicode_literals, absolute_import
 
 import re
+import os
 import json
 from collections import defaultdict
 import math
@@ -10,12 +11,19 @@ import math
 ## NBweb
 from . import utils
 
-def todos(db):
+def todos(db,loc=None):
     todo_DB = {}
-    for item in db.execute("""
-            SELECT rootbasename,todo 
-            FROM file_db 
-            WHERE todo IS NOT NULL"""):
+    
+    qmarks = []
+    sql = """SELECT rootbasename,todo FROM file_db 
+             WHERE (todo IS NOT NULL)"""
+    
+    if loc: # add location
+        loc = utils.join('/',os.path.dirname(loc),'%') # So it is just the /dir + wildcard
+        sql += ' AND (rootbasename LIKE ?)'
+        qmarks.append(loc)
+        
+    for item in db.execute(sql,qmarks):
         todos = json.loads(item['todo'])
         if len(todos) == 0:
             continue
@@ -124,12 +132,21 @@ def todos(db):
     todo_text = utils.to_unicode('\n'.join(todo_text))
     return todo_text,todo_html
 
-def tags(db):
+def tags(db,loc=None):
 
     # Invert the tag database
     tag_DB_inv = defaultdict(list) # the incoming is all sets for no repeats
     
-    for item in db.execute('SELECT rootbasename,tags,ref_name FROM file_db WHERE  LENGTH(tags)>0'):
+    qmarks = []
+    sql = """SELECT rootbasename,tags,ref_name 
+             FROM file_db WHERE  LENGTH(tags)>0"""
+    
+    if loc: # add location
+        loc = utils.join('/',os.path.dirname(loc),'%') # So it is just the /dir + wildcard
+        sql += ' AND (rootbasename LIKE ?)'
+        qmarks.append(loc)
+    
+    for item in db.execute(sql,qmarks):
         page = {'path':item['rootbasename'],'ref_name':item['ref_name']}
         tags = item['tags']
         if len(tags) == 0:

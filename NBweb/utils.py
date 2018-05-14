@@ -606,6 +606,8 @@ def clean_for_search(text_html):
 def standard_tag(tag):
     return tag.strip().replace(' ','_').replace('-','_').lower()
 
+fpnoroot = namedtuple('fileparts_noroot',['dirname','basename','ext'])
+fproot = namedtuple('fileparts',['dirname','basename','ext','rootbasename','rootdirname','rootname'])
 def fileparts(name,root=None):
     """
     Split a file path into parts. If root is None, will return
@@ -625,17 +627,17 @@ def fileparts(name,root=None):
         fileparts(dirname='/path/to/notebook/source/subdir',
                   basename='page1',
                   ext='.md',
-                  rootname=u'/subdir/page1.md',
-                  rootdirname=u'/subdir',
-                  rootbasename=u'/subdir/page1')
+                  rootbasename=u'/subdir/page1',
+                  rootdirname=u'/subdir/',
+                  rootname=u'/subdir/page1.md')
 
         name = '/path/to/notebook/source/subdir/' # Notice the trailing /
         fileparts(dirname='/path/to/notebook/source/subdir',
                   basename=u'',
                   ext=u'',
-                  rootbasename=u'/subdir',
-                  rootdirname=u'/subdir',
-                  rootname=u'/subdir')
+                  rootbasename=u'/subdir/',
+                  rootdirname=u'/subdir/',
+                  rootname=u'/subdir/')
     """
     if name.endswith('/'):
         basename = ext = ''
@@ -645,21 +647,21 @@ def fileparts(name,root=None):
         dirname,basename = os.path.split(basename)
 
     if root is None:
-        fp = namedtuple('fileparts',['dirname','basename','ext'])
-        return fp(dirname=dirname,basename=basename,ext=ext)
+        return fpnoroot(dirname=dirname,basename=basename,ext=ext)
     else:
         rootpath = os.path.relpath(name,root)
         if basename == '': # folder set above
             if rootpath == '.':
                 rootpath = ''
-            rootdirname = rootname = rootbasename = '/' + rootpath
+            rootdirname = rootname = rootbasename = join('/',rootpath) + ('/' if rootpath else '')
         else:
-            rootdirname = '/' + os.path.split(rootpath)[0]
-            rootname = '/' + rootpath
+            rootdirname = (join('/',os.path.split(rootpath)[0]) + '/').replace('//','/')
+            rootname = join('/',rootpath)
             rootbasename = os.path.join(rootdirname,basename)
 
-        fp = namedtuple('fileparts',['dirname','basename','ext','rootbasename','rootdirname','rootname'])
-        return fp(dirname=dirname,basename=basename,ext=ext,rootbasename=rootbasename,rootdirname=rootdirname,rootname=rootname)
+        return fproot(dirname=dirname,basename=basename,ext=ext,
+                      rootbasename=rootbasename,rootdirname=rootdirname,
+                      rootname=rootname)
 
 def patterns_check(rootname,patterns=None,isdir=False):
     """
@@ -749,6 +751,8 @@ def bread_crumb(rootbasename,title=None):
     """
     Create a breadcumb for a given rootname
     """
+    # 
+#     import ipdb;ipdb.set_trace()
     if rootbasename.endswith('/'):
         rootbasename += 'index'
 
@@ -931,6 +935,33 @@ def titledict(meta):
     res['loc_short_date'] = date_loc.strftime('%Y-%m-%d')
 
     return res
+    
+    
+def all_sub_txt(rootname,strong=False):
+    """
+    Will generate the "All Sub Pages", (+ todo,tags) based on config
+    """
+    rootname = strip_leading(rootname)
+    res = []
+    res.append(('Pages','/_all/' + rootname ))
+    if NBCONFIG.show_subdir_options['todo']:
+        res.append(('Tasks','/_todo/' + rootname ))
+    if NBCONFIG.show_subdir_options['tags']:
+        res.append(('Tags','/_tags/' + rootname ))
+
+
+    # Make them all links
+    if strong:
+        res_links = ['<a href="{1}"><strong>{0}</strong></a>'.format(*r) for r in res]
+    else:
+        res_links = ['<a href="{1}">{0}</a>'.format(*r) for r in res]
+    linktxt = ', '.join(res_links)
+    return '<small>All sub: {}</small>'.format(linktxt)
+    
+def strip_leading(txt):
+    while txt.startswith('/'):
+        txt = txt[1:]
+    return txt
 
 def datetime_adjusted(tz=0):
     """

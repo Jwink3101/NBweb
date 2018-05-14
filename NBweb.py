@@ -72,7 +72,7 @@ if config_dir not in sys.path:
 # Start
 import NBCONFIG
 if args.reset:
-    DBpath = NBCONFIG.DBpath.replace('sqlite:///','')
+    DBpath = os.path.join(NBCONFIG.scratch_path,'DB.sqlite')
     try:
         os.remove(DBpath)
     except OSError:
