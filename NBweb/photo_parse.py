@@ -22,10 +22,8 @@ if sys.version_info > (2,):
     unicode = str
     xrange = range
 
-
-
 from . import utils
-import NBCONFIG
+from .nbconfig import NBCONFIG
 
 maxDim=1000
 

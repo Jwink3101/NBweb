@@ -8,7 +8,7 @@ import hashlib
 
 import multiprocessing as mp ## Uses multi-processing to speed things up for the thumbnail creation
 
-from NBweb import utils
+from . import utils
 
 maxDim=1000
 

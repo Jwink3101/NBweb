@@ -72,24 +72,12 @@ FORMATS = {
 
 ####################################
 # All config files and inject settings
-import NBCONFIG
+from .nbconfig import NBCONFIG
 
-NBCONFIG.extensions = [a.lower() for a in NBCONFIG.extensions]
-NBCONFIG.exclusions = list(set(NBCONFIG.exclusions + ['.git/','.svn/','.*','_*']))
 USERS = NBCONFIG.edit_users.copy()
 USERS.update(NBCONFIG.protected_users)
 REQUIRELOGIN = len(USERS) > 0
 NBCONFIG.FORMATS = FORMATS
-
-NBCONFIG.scratch_path = os.path.abspath(NBCONFIG.scratch_path)
-try:
-    os.makedirs(NBCONFIG.scratch_path)
-except OSError:
-    pass
-
-# Set the DB. Note that the program uses `dataset` which uses SQLAlchemy. Use that system
-# For this, set as this directory
-NBCONFIG.DBpath = os.path.join(NBCONFIG.scratch_path,'DB.sqlite')
 
 #################################
 

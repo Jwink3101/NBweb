@@ -1,16 +1,15 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-"""
-Configuration File
-"""
-from __future__ import division, print_function, unicode_literals, absolute_import
+###############################################
+############# NBweb Configuration #############
+###############################################
 
-## Paths
+# This file is evaluated as a python document without any form of
+# sanitization. Be careful
 
-## These setting can be changed but this is a usuall good choice
-# Specify the source directory for the site. Default is to use this one
+# the variables `source` is already defined! All other values should be
+# set but these also represent the defaults
+
+
 import os
-source = os.path.normpath(os.path.join(os.path.split(os.path.abspath(__file__))[0],'../'))
 
 # Specify a FULL scratch path
 scratch_path = os.path.join(source,'_scratch')
@@ -48,8 +47,8 @@ edit_users = {'editor':'saltedpasswordhash'}
 # Warning: if a directory is both blogged and protected, it will STILL show in
 #          the blog pages. Be careful! Same for RSS pages
 # Note that /_galleries is also a possible value. (and "*" will protect it)
-blog_dirs = ['/posts/*']
-protectect_dirs = ['/pages/protected/*']
+blog_dirs = [] # e.g. ['/posts/*']
+protectect_dirs = [] # e.g. ['/pages/protected/*']
 exclusions = ['/media/*'] # just not shown
 protected_comment = '\n<p>U: <code>USER</code>, P: hint hint</p>\n'
 
@@ -200,8 +199,6 @@ photo_root = '/path/to/photo/root'
 # `root` setting, but this will ALSO search from `photo_root`. It may be slow
 # since it has to find the photo in a larger directory
 photo_search_from_root = False
-
-
 
 #############################################
 ## Bash Management

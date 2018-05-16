@@ -18,7 +18,7 @@ import json
 import copy
 import random
 
-import NBCONFIG
+from .nbconfig import NBCONFIG
 
 if sys.version_info >= (3,):
     unicode = str

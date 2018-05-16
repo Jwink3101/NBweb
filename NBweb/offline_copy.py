@@ -14,8 +14,8 @@ if sys.version_info[0] >= 3:
 from bottle import HTTPError
 
 from . import utils
-from . import NBweb
-import NBCONFIG
+from . import main
+from .nbconfig import NBCONFIG
 
 # Incomplete todo:
 # - [X] Home page / blog
@@ -39,12 +39,12 @@ def offline_copy(_export_path):
     export_path = _export_path
     
     # First, monkey patch the original config
-    NBweb.NBCONFIG.protectect_dirs = []
-    NBweb.NBCONFIG.protected_users = {}
-    NBweb.NBCONFIG.edit_users = {}
+    main.NBCONFIG.protectect_dirs = []
+    main.NBCONFIG.protected_users = {}
+    main.NBCONFIG.edit_users = {}
     
     # Now monkey patch NBweb
-    NBweb.REQUIRELOGIN = False
+    main.REQUIRELOGIN = False
 
     pages = []
 
@@ -69,13 +69,13 @@ def offline_copy(_export_path):
             dest = os.path.join(export_path,rootname, 'index.html')
             
             # Exclusions.
-            if NBweb.exclusion_check(utils.join('/',rootname +'/')):
+            if main.exclusion_check(utils.join('/',rootname +'/')):
                 with open(dest,'w',encoding='utf8') as FF:
                     FF.write('')
                 continue
                 
             try:
-                html = NBweb.main_route('/' + rootname + '/')
+                html = main.main_route('/' + rootname + '/')
             except HTTPError:
                 # Likely some additional resource in _NBweb
                 try:
@@ -94,7 +94,7 @@ def offline_copy(_export_path):
             dest = os.path.join(export_path,'_all',rootname, 'index.html')
             mkdir(dest,isfile=True,isfull=True)
             
-            html = NBweb.allpage('/'+ rootname +'/')
+            html = main.allpage('/'+ rootname +'/')
             html = process_page(html,dest)
             with open(dest,'w',encoding='utf8') as FF:
                 FF.write(html)
@@ -121,7 +121,7 @@ def offline_copy(_export_path):
             if ext in NBCONFIG.extensions:
                 dest = os.path.join(export_path,rootbasename + '.html')
                 try:
-                    html = NBweb.main_route(rootbasename + '.html')
+                    html = main.main_route(rootbasename + '.html')
                 except:
                     print('Issue with: {}'.format(rootname))
                 
@@ -136,7 +136,7 @@ def offline_copy(_export_path):
     dest_systemname = os.path.join(export_path,'')
     dest = os.path.join(export_path,'index.html')
     
-    html0 = NBweb.main_route('/',map_view=True)
+    html0 = main.main_route('/',map_view=True)
     
     html = process_page(html0,dest)
     with open(dest,'w',encoding='utf8') as FF:
@@ -152,7 +152,7 @@ def offline_copy(_export_path):
     # _all
     dest = os.path.join(export_path,'_all','index.html')
     
-    html = NBweb.allpage('/')
+    html = main.allpage('/')
     html = process_page(html,dest)
     with open(dest,'w',encoding='utf8') as FF:
         FF.write(html)
@@ -164,7 +164,7 @@ def offline_copy(_export_path):
             dest = os.path.join(export_path,'_blog',unicode(blog_num),'index.html')
                 
             try:
-                html = NBweb.main_route('/',map_view=False,blog_num=blog_num)
+                html = main.main_route('/',map_view=False,blog_num=blog_num)
             except HTTPError:
                 break # At the last one
             
@@ -176,7 +176,7 @@ def offline_copy(_export_path):
             blog_num += 1
         # Make the home page. 
         dest = os.path.join(export_path,'index.html')
-        html = NBweb.main_route('/',map_view=False,blog_num=0)
+        html = main.main_route('/',map_view=False,blog_num=0)
         html = process_page(html,dest)
         with open(dest,'w',encoding='utf8') as FF:
             FF.write(html)
@@ -187,7 +187,7 @@ def offline_copy(_export_path):
     # Tags
     dest = os.path.join(export_path,'_tags/index.html')
     mkdir(dest,isfile=True,isfull=True)  
-    html = NBweb.return_tags()
+    html = main.return_tags()
     html = process_page(html,dest)
     with open(dest,'w',encoding='utf8') as FF:
         FF.write(html)
@@ -195,12 +195,12 @@ def offline_copy(_export_path):
     # ToDos
     dest = os.path.join(export_path,'_todo/index.html')
     mkdir(dest,isfile=True,isfull=True)  
-    html = NBweb.return_todo()
+    html = main.return_todo()
     html = process_page(html,dest)
     with open(dest,'w',encoding='utf8') as FF:
         FF.write(html)
     
-    txt = NBweb.return_todo_txt()
+    txt = main.return_todo_txt()
     dest = os.path.join(export_path,'_todo/todo.txt')
     with open(dest,'w',encoding='utf8') as FF:
         FF.write(txt)
