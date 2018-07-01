@@ -209,4 +209,96 @@ There is a **very crude** user management.
 
 A small amount of scratch space is needed to store sessions, and the DB (by default. That can be changed in the config).
 
+## Synchronization
+
+This is entirely up to the user, but I like to use my other tool, [PyFiSync](https://github.com/Jwink3101/PyFiSync) + git to synchronize my notebook. The general idea is that git tracks all of the notes and PyFiSync does all of the media. 
+
+The key is to set it up as follows:
+
+* Set up git to *only* track notes and config files (option)
+* Set up PyFiSync to track everything git doesn't
+    * Set up PyFiSync to first get git in sync before running.
+    
+This assumes you have some host that has a clone of the git repo and also acts as the server for PyFiSync (so you need a git repo hosted somewhere else)
+
+### Git Setup.
+
+The git repo should be a clone of the notes. Set up the following for `.gitignore 
+
+```.gitignore
+# Ignore Everything...
+*
+
+# ... except directories, so we can recurse into them
+!*/
+
+# Allow these files
+!*.md
+!*.txt
+!.gitignore
+
+# Ignore media
+media_log.txt
+```
+
+You may also, later, want to manually add the config file with `git add --force .PyFiSync/config`
+
+### PyFiSync Setup
+
+As of version `20180630.0`. In the **PyFiSync** config
+
+Set the following to ignore git:
+
+    git_exclude = True
+
+Now you need to make sure you have the git repos in sync *before* PyFiSync is run.
+
+```PyFiSync-config
+pre_sync_bash = """
+# Add everything locally
+git add .   
+git commit -am"auto PyFiSync commit local"
+
+# Pull from the server and auto-merge. Could also do --rebase
+git pull --no-edit
+git push
+
+# Remote
+REMUSER=user@myhost.tld
+REMPATH=/path/to/NBweb/location
+
+ssh $REMUSER \
+"cd $REMPATH &&\
+ git pull --no-edit &&\
+ git add . &&\
+ git commit -am'auto PyFiSync commit server' &&\
+ git push"
+
+# Pull and push again to get changes
+git pull --no-edit # again, can do --rebase
+git push
+"""
+```
+
+### NBweb setup.
+
+In the **NBweb** config, add the following to `bashcmds`
+
+    ('Synchronize','PyFiSync $nbsource')
+
+on the **LOCAL** machines. If you have a separate server that both hosts the notebook and is also the PyFiSync server, you do not need the PyFiSync part.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
