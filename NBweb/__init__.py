@@ -7,6 +7,8 @@ import sys
 import os
 import argparse
 
+__version__  = '20180703.0'
+
 def openbrowser(url):
     import webbrowser
     from threading import Thread
@@ -108,7 +110,7 @@ def cli(argv=None):
     if args.password:
         import getpass
         p = getpass.getpass()
-        print(NBweb.salthash(p))
+        print(main.salthash(p))
         sys.exit()
     
 
