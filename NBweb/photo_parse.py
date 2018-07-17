@@ -124,6 +124,10 @@ class PhotoGallery:
                 description = description[1:].lstrip()
             while description.endswith('\n') or description.endswith(' '): # Should be a single loop
                 description = description[:-1].rstrip()
+                
+            # Process inline (e.g. [[-inlinepath]] ) in the description
+            replacer = lambda m:self.link_only(m.group(1))
+            description = re.sub("\[\[\-(.*?)\]\]",replacer,description)
 
             # Deal with block types
             block_path = block_path.strip()
@@ -143,9 +147,15 @@ class PhotoGallery:
                         description = '**{:s}**\n\n'.format(block_path) + description
                 self.blocks_processed.append(description)
                 continue
+            
+            if block_path.startswith('-'):
+                # link but do not show the media
+                block_path = block_path[1:].strip()
+                description = '<em>{}</em>\n\n'.format(self.link_only(block_path)) + description
+                self.blocks_processed.append(description)
+                continue
 
             # Otherwise it is photo or media
-        
             # Handle the same way for multiphoto or regular
         
             # Split it up on commas but handle if inside of a "[tag,tag]" (https://stackoverflow.com/a/38748250)
@@ -177,8 +187,20 @@ class PhotoGallery:
 
             self.blocks_processed.append(title_tmp + '\n\n' + txt_tmp + '\n\n' + description)
 
+    def link_only(self,blockpath):
+        """
+        Process inline [[-blockpath]] links and return the text
+        """
+        p = self.photo_link(blockpath,no_video=True)
+        if isinstance(p,tuple):
+            # Image
+            return '<a href="{t}"><code>{bp}</code></a><sup><a href="{f}">(full-size)</a></sup>'.format(
+                            t=p[1],bp=blockpath,f=p[0])
+        else:
+            return p.replace("File: ",'')
+        
 
-    def photo_link(self,blockpath):
+    def photo_link(self,blockpath,no_video=False):
         """
         Creates the link for a given block path and returns:
             * string with html for files and/or media
@@ -229,7 +251,7 @@ class PhotoGallery:
             thumb_fs += new_ext
             thumb += new_ext
         
-        if ext.lower() in ['.mp4','.mov']:
+        if ext.lower() in ['.mp4','.mov'] and not no_video:
             return '<video controls="true" width="100%" height="60%" preload="metadata"><source src="{:s}" type="video/mp4"></video>'.format(main)
     
         elif ext.lower() in ['.jpg', '.jpeg', '.jp2', '.jpx', '.gif', '.png', '.tiff', '.tff', '.bmp']:

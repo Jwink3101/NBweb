@@ -23,9 +23,13 @@ There are the following block types. `...` denotes any text. It will be ignored
     * Main comment block. If specified, will be printed with the title (unless done with heading noted below)
     * Another option is to do `[[+ # Heading 1]]`, `[[+ ## Heading 2]]`, etc
         * Note the `+` must be before otherwise it will be treated like a hidden comment
+* `[[-path/to/photo.jpg]]` - Link block. A link block is like a comment and a photo block combined. The file name will be included and there will be a link to the thumb and full-size version of the photo. Note: these (and *only* these) can also be inline!
 
 File extensions are used if they are given, but are not needed.
 
+### Inline image links
+
+There may be the case where there are photos you wish to include as a link only and not as a shown photo. To do this, use the `[[-path/to/photo.jpg]]` *inline*. 
 
 ## Photo Paths
 
@@ -54,9 +58,9 @@ This filter is applied in matching file names and in block names
 
 ## Internals & Remote Upload
 
-Since the galleries are likely a subset of a full photo collection and it is not ideal to have to upload an entire library, internally, NBweb creates symlinks to the source and serves them. This means that on the remote site, you can simply `rsync` (with `--follow-links`) the photo directory inside the scratch folder. As long on on the main server, it is always able to find the photo there (and it will be a actual file and *not* the link).
+Since the galleries are likely a subset of a full photo collection and it is not ideal to have to upload an entire library. Internally, NBweb creates symlinks to the source and serves them. This means that on the remote site, you can simply `rsync` (with `--follow-links`) the photo directory inside the scratch folder. As long on on the main server, it is always able to find the photo there (and it will be a actual file and *not* the link).
 
-Internally, when a photo is parsed, first the code looks to see if a file (symlink or direct) exists for the *filtered* name. If the item is a file or an in-tact symlink, it will serve that file. Otherwise, it will search for the correct file (as noted above) and regenerate the symlink. 
+Internally, when a photo is parsed, first the code looks to see if a file (symlink or direct) exists for the *filtered* name (see above). If the item is a file or an in-tact symlink, it will serve that file. Otherwise, it will search for the correct file (as noted above) and regenerate the symlink. 
 
 Thumbnails are only regenerated if they do not exists.
 
@@ -126,15 +130,21 @@ If there are symlinks as any photo specifier, whether they are relative or absol
     [[# rel/path/photo4.jpg]]
     Just an example on how one may use a comment block on a photos. This too will not show in the output
 
-    [photo5.jpg]
-    [photo6.jpg] 
+    [[photo5.jpg]]
+    [[photo6.jpg]] 
     Photos do not need captions
 
-    [+ photo7.jpg]
+    [[+ photo7.jpg]]
     This will appear as a comment w/o showing photo7 (but with the title)
     
-    [photo8.jpg|photo9.jpg]
+    [[photo8.jpg|photo9.jpg]]
     Multi-photo block
+    
+    [[photo10.jpg]]
+    This is a photo and see also the linked-but-not-show [[-photo11.jpg]]
+    
+    [[-photo12.jpg]]
+    This, like the one above inline, will also just be a link to the photo thumbnail with the full-size one noted
 
 ## Photo names
 
@@ -153,8 +163,6 @@ Thumbnail conversion uses PIL and runs on multiple cores (processes) to speed th
 Since the system in dynamic but you may not want to store your entire photo library, it works as follows:
 
 Inside of the scratch directory, a directory for photos and thumbnails are created. The first thing the code will do is see if the photo is in the scratch directory, If it is not, it will create a *symlink* to the original photo in the scratch directory. Photos are served from the scratch directory. The server *should* follow the symlinks fine 
-
-- [ ] confirm or instead have my code resolve the link
 
 It will then make a thumbnail of the photo *if it doesn't exist*.
 
