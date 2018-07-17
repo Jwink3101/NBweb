@@ -42,6 +42,7 @@ class mmd_(object):
         self.re_prism_highlight = re.compile('<pre><code class=\"(.*?)\">')
         self.re_html_block = re.compile("^ {0,3}<htmlblock> *$\n(.*?)^</htmlblock> *$",flags=re.DOTALL|re.MULTILINE)
         self.re_gallery_block = re.compile("^ {0,3}<gallery> *$\n(.*?)^</gallery> *$",flags=re.DOTALL|re.MULTILINE)
+        self.re_URL = re.compile('\S*https?://\S+',flags=re.IGNORECASE) # This captures the URL and everything around it. Will clean later
 
         self.extensions = ['markdown.extensions.extra',
                            'markdown.extensions.toc',
@@ -66,16 +67,18 @@ class mmd_(object):
         text_in = text_in.expandtabs(4)
 
         text_in = self.re_toc.sub('\n[TOC]',text_in)
-        text_in = self.re_wikilinks.sub('[`\\1`](\\1)',text_in)
+        text_in = self.re_wikilinks.sub('[`\\1`](\\1)',text_in)  # [[/path/to/path]]
         text_in = self.re_link_img.sub('[![\\1]\\2]\\2',text_in) # !{}(path) syntax
         
         # <gallery> block. Must be before <htmlblock>
         text_in = self.re_gallery_block.sub(self.replace_gallery_txt,text_in)
-        
-        
+                
         # <htmlblock> blocks
         html_blocks = self.re_html_block.findall(text_in)
         text_in = self.re_html_block.sub(self.rand_replacement,text_in)
+
+        # Detect urls
+        text_in = self.re_URL.sub(self.url_fix,text_in)
 
         self.Markdown.reset() # IMPORTANT. Otherwise, the instance gets mucked
                               # up with caches, etc.
@@ -137,6 +140,42 @@ class mmd_(object):
                                     'all_img_paths':images
                                 })
         return text
+    
+    def url_fix(self,m):
+        """
+        heuristic function to determine if the included is a real URL or not.
+    
+        Note: if the returned text looks like "[link](<http://bla.com>)", it will
+        still properly render
+    
+        May not be perfect and the goal isn't to capture every single one...
+        """
+        
+        url0 = url = m.group()
+        urll = url.lower()
+        print(url0)
+
+        # Is it just a vanilla URL with *nothing* around it and only http[s] once?
+        if len(re.findall('https?://',urll)) == 1 and \
+             urll.startswith('http'):
+           return '<' + url0 + '>'
+    
+        # Handle "(http://url.com)" and [http://url.com] but not "[link](http://url.com)"        
+        for s,e in ['[]','()']:
+            if url.startswith(s) and url.endswith(e):
+                return s + '<' + url[1:-1] + '>' + e
+    
+        # Escaped
+        if url.startswith('\<'):
+            return url
+    
+        # Already a URL
+        if url.startswith('<') and url.endswith('>'):
+            return url
+    
+        # At this point, it is not a detectable URL. Skip
+        return url
+ 
      
 
 mmd = mmd_(automatic_line_breaks=True)
@@ -735,7 +774,12 @@ def combine_html(item_list,annotate=False,add_date=False,show_path=False):
         page = ['<h2><a href="{rootbasename}.html">{ref_name}</a></h2>'.format(**item)]
 
         if show_path:
-            page.append('<p><code>{rootname}</code></p>\n'.format(**item))
+            nametxt = '<code>{rootname}</code>\n'.format(**item)
+            if NBCONFIG.display_page_id and item.get('meta_id'):
+                nametxt += '<br><small><code>/_id/{meta_id}</code></small>'.format(**item)
+            page.append('<p>{}</p>\n'.format(nametxt))
+            
+                
 
         date = parse_date(item.get('meta_date',''))
         if date is not None and add_date:
