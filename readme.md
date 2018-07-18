@@ -163,11 +163,7 @@ The only issue is that these pages cannot be deleted via the web interface. Just
 ## Known Issues:
 
 - Even if a page is restricted, a non-registered user may still be able to view the title if it has any tags and may be able to view any todo items from that page
-    - [ ] Investigate using a hook to fix this
-    - Even if/when this is fixed, the template will still be visible
-
-- [ ] Media Viewer? Certain directories?
-- Cannot delete `indexm.md` pages
+- Cannot delete `index.md` from the web-viewer
 
 ## Exclusions
 
@@ -223,7 +219,7 @@ This assumes you have some host that has a clone of the git repo and also acts a
 
 ### Git Setup.
 
-The git repo should be a clone of the notes. Set up the following for `.gitignore 
+The git repo should be a clone of the notes. Set up the following for `.gitignore`:
 
 ```.gitignore
 # Ignore Everything...
@@ -245,7 +241,7 @@ You may also, later, want to manually add the config file with `git add --force 
 
 ### PyFiSync Setup
 
-As of version `20180630.0`. In the **PyFiSync** config
+As of version `PyFiSync-20180710.0`. In the **PyFiSync** config
 
 Set the following to ignore git:
 

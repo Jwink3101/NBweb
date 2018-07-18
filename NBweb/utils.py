@@ -153,8 +153,7 @@ class mmd_(object):
         
         url0 = url = m.group()
         urll = url.lower()
-        print(url0)
-
+        
         # Is it just a vanilla URL with *nothing* around it and only http[s] once?
         if len(re.findall('https?://',urll)) == 1 and \
              urll.startswith('http'):
