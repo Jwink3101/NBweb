@@ -175,8 +175,6 @@ class mmd_(object):
         # At this point, it is not a detectable URL. Skip
         return url
  
-     
-
 mmd = mmd_(automatic_line_breaks=True)
 
 def parse_file(filepath):

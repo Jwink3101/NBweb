@@ -264,10 +264,10 @@ REMUSER=user@myhost.tld
 REMPATH=/path/to/NBweb/location
 
 ssh $REMUSER \
-"cd $REMPATH &&\
- git pull --no-edit &&\
- git add . &&\
- git commit -am'auto PyFiSync commit server' &&\
+"cd $REMPATH;
+ git pull --no-edit;
+ git add . ;
+ git commit -am'auto PyFiSync commit server';
  git push"
 
 # Pull and push again to get changes
