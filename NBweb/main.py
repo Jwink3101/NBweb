@@ -61,6 +61,7 @@ from .utils import html_snippet,strip_leading
 from . import todo_tags
 from . import search
 from . import bottlesession
+from . import ipynb
 from .photo_sort import photo_sort
 from .photo_parse import photo_parse
 
@@ -237,7 +238,10 @@ def parse_path(systempath,db,commit=True,force=False):
     item['mtime'] = mtime
 
     # Get the actual text
-    filetext,meta = utils.parse_file(systempath)
+    if item['ext'] == '.ipynb':
+        filetext,meta = ipynb.convert(systempath)
+    else:
+        filetext,meta = utils.parse_file(systempath)
 
     if parts.ext == '.gallery':
         filetext = photo_parse(filetext,meta,NBCONFIG)
@@ -510,14 +514,26 @@ def cross_ref(item,db):
         if link.startswith('/_id/'):
             linkid = link[5:]
             # Get the first item with the ID. 
-            match = db.execute("""  SELECT rootbasename 
+            match = db.execute("""  SELECT rootbasename,draft 
                                     FROM file_db 
                                     WHERE meta_id=?""",(linkid,)).fetchone()
-            if match is None:
-                print('\nBroken link:\n to: {}\n in: {}'.format(link,item['rootbasename']))
-                continue
             link = match['rootbasename'] + '.html'
+        else:
+            # Match without the extension since the text has already been
+            # through utils.convert_internal_extension 
+            match = db.execute("""
+                SELECT draft
+                FROM file_db
+                WHERE rootbasename=?""",(os.path.splitext(link)[0],)).fetchone()
         
+        if match is None:
+            print('\nBroken link:\n to: {}\n in: {}'.format(link,item['rootbasename']))
+            continue
+        if match['draft']: # == 1. If ==0, this will not flag
+            logged_in,session = check_logged_in()
+            if not(session.get('name',None) in NBCONFIG.edit_users) or not session.get('valid',False):
+                continue
+                
         outgoing.add(link)
     
     outgoing = sorted(outgoing,key=lambda a:a.lower())
@@ -552,6 +568,7 @@ def cross_ref(item,db):
             ('%' + item['rootbasename'] + '.%','%' + idquery + '%')).fetchall() 
             
     if len(incoming) > 0:
+        icount = 0
         crossref.append('<p>Incoming:</p>\n<ul>')
         for subitem in incoming:
             if subitem['draft']:
@@ -564,19 +581,20 @@ def cross_ref(item,db):
             # Make sure that it *actually* links to this page and not something 
             # that starts the same (see note above)
             subitem_outgoings = subitem['outgoing_links'].split(',')
-            found = False
             for subitem_outgoing in subitem_outgoings:
                 if subitem_outgoing == idquery: # Compare ID
-                    found = True
                     break
                 # compare the base of the outgoing link to rootbasename
                 if os.path.splitext(subitem_outgoing)[0] == item['rootbasename']:
-                    found = True
                     break
-            if not found:
+            else:
                 continue
-
             crossref.append('<li><a href="{rootbasename}.html">{ref_name}</a></li>'.format(**subitem))
+            icount += 1
+        
+        if icount == 0: 
+            del crossref[-1] # In case nothing was added after all
+        
         crossref.append('</ul>\n')
     return '\n'.join(crossref)
 

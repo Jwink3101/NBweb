@@ -7,7 +7,7 @@ import sys
 import os
 import argparse
 
-__version__  = '20180703.0'
+__version__  = '20181007'
 
 def openbrowser(url):
     import webbrowser

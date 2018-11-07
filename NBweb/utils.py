@@ -391,7 +391,9 @@ def convert_internal_extension(html,extensions=None,return_links=False):
         if ext == '.html':
             links.add(path)
             continue
-
+        
+        if path.startswith('data:'):
+            continue
         if ext.lower() not in extensions + ['.html','.md','']: # skip media, etc
             continue
 
@@ -456,14 +458,19 @@ def annotate_links(html,internal=True):
     references = OrderedDict() # we will call it in order later
 
     for link in re_ann.finditer(html):
-
         original = link.group(0)
         path = link.group(2)
-
+        
         if internal and not is_internal_link(path):
             continue
 
-        type = types[link.group(1)]
+        # embedded data
+        if path.startswith('data:'):
+            replacement = (original,'<sup>[embeded data]</sup>{:s}'.format(original))
+            replacements.add(replacement) # uses a set in case this isn't new
+            continue
+
+        type_ = types[link.group(1)]
 
         # See if we already had this one
         if path in references:
@@ -471,8 +478,8 @@ def annotate_links(html,internal=True):
         else:
             reference = len(references) + 1
             references[path] = reference
-
-        replacement = (original,'<sup>[{}:{}]</sup>{:s}'.format(type,reference,original))
+        
+        replacement = (original,'<sup>[{}:{}]</sup>{:s}'.format(type_,reference,original))
         replacements.add(replacement) # uses a set in case this isn't new
 
     # Do replacements
@@ -527,6 +534,8 @@ def is_relative_link(link,basename=None):
     if '://' in link: # INCLUDE file://
         return False
     if link.startswith('/'):
+        return False
+    if link.startswith('data:'):
         return False
 
     # Anything else should be relative
@@ -793,7 +802,6 @@ def bread_crumb(rootbasename,title=None):
     Create a breadcumb for a given rootname
     """
     # 
-#     import ipdb;ipdb.set_trace()
     if rootbasename.endswith('/'):
         rootbasename += 'index'
 
